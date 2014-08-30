@@ -11,6 +11,7 @@ print('pyWHATauto: johnnyfive + blubba. WHATauto original creator: mlapaglia.')
 import sys
 import globals as G
 import irclib as irclib
+import requests
 #import handlePubMSG as handlePubMSG
 from torrentparser import torrentparser
 
@@ -589,33 +590,40 @@ def download(downloadID, site, location=False, network=False, target=False, retr
                 time.sleep(0.5)
         
         cj = cookielib.LWPCookieJar()
-    
+        out('INFO',site)
+	out('INFO',SETUP.get('wm', 'wm_enabled'))    
         #use the cookie to download the file
-        if network == "whatcd" and SETUP.get('wm', 'wm_enabled')==1:
+        if site == 'whatcd' and SETUP.get('wm', 'wm_enabled'):
+	    statusmsg='Vmshit'
+	    file_info=False
             WM_PATH = SETUP.get('wm','wm_torrent_path')
-            WM_ADD_URL = SETUP.get('wm','wm_add_url')
+	    WM_ADD_URL = SETUP.get('wm','wm_add_url')
             WM_USER = SETUP.get('wm','wm_user')
             WM_PWD = SETUP.get('wm','wm_password')
-            post_data = {
-            'id': downloadID,
-            'tags': 'my',
-            'dir': WM_PATH,
+	    post_data = {
+            	'id': downloadID,
+            	'tags': 'my',
+            	'dir': WM_PATH,
             }
             wmcounter = 3
             while wmcounter>0:
                 response = requests.post(WM_ADD_URL, data=post_data,
                                  auth=(WM_USER, WM_PWD))
+		out('INFO',response.text)
                 if(response.status_code == requests.codes.ok):
-                    out('INFO',response.text)
+            #        out('INFO',response.text)
                     response_json = response.json()
-                    if response_json['succes']:
+                    if response_json['success']:
                         out('INFO','Added torrent to WM')
                         return(True,'Added torrent');
                     elif response_json['success'] and response_json['error_code']=='already_added':
                         out('INFO','Torrent already added')
                         return(False,'Torrent already added')
-                wmcounter--
+                wmcounter=wmcounter-1
+		break
+		return(False,'Errror')
         else:
+	    out('INFO','NO VM')
             retreived = dlCookie(downloadID, site, cj, target, network, name)
             if str(type(retreived)) == "<type 'instance'>":
                 file_info = retreived.info()
